@@ -108,7 +108,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
 
       if (onSuccess) {
         onSuccess({ 
-          user: { displayName: data.name, role: 'interviewer' },
+          user: { displayName: data.name, role: 'interviewer', interviewId: interviewId.toUpperCase() },
           subject: data.subject
         });
       }

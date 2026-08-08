@@ -12,6 +12,7 @@ import '../components/form.css';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://ai-interview-fastapi.onrender.com/api/interview';
 
 export default function OriginalGithubUI({ user, userRole, activeSubject, onLogout, onSwitchRole }) {
+  const interviewId = user?.interviewId;
   const [sessionId, setSessionId] = useState('');
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
