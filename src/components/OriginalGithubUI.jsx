@@ -362,22 +362,18 @@ export default function OriginalGithubUI({ user, userRole, activeSubject, onLogo
 
             {/* Final Feedback Report */}
             {isDone && feedback && (
-              <div className="feedback-container">
-                <h3>Interview Summary</h3>
-                <p>{feedback.summary}</p>
-                <br />
-                <h3>Key Strengths</h3>
-                <ul>
-                  {feedback.strengths?.map((s, i) => <li key={i}>{s}</li>)}
-                </ul>
-                <h3>Areas for Improvement</h3>
-                <ul>
-                  {feedback.gaps?.map((g, i) => <li key={i}>{g}</li>)}
-                </ul>
-                <h3>Recommended Next Steps</h3>
-                <ul>
-                  {feedback.next?.map((n, i) => <li key={i}>{n}</li>)}
-                </ul>
+              <div className="feedback-container" style={{ textAlign: 'center', padding: '2rem' }}>
+                <CheckCircle2 style={{ width: '48px', height: '48px', color: '#1DB96A', marginBottom: '1rem' }} />
+                <h3>Interview Completed</h3>
+                <p style={{ marginTop: '1rem', color: '#a0a5b5', lineHeight: '1.6' }}>
+                  Thank you for completing the technical evaluation.<br/>
+                  Your responses have been successfully submitted for review.
+                </p>
+                <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(0, 243, 255, 0.05)', borderRadius: '8px', border: '1px solid rgba(0, 243, 255, 0.1)' }}>
+                  <p style={{ color: '#00f3ff', fontSize: '0.9rem' }}>
+                    We will let you know the result through your registered email shortly.
+                  </p>
+                </div>
               </div>
             )}
           </div>
