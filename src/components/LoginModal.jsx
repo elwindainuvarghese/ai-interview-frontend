@@ -25,6 +25,34 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
   // Login Form State
   const [interviewId, setInterviewId] = useState('');
 
+  // Polling State
+  const [pendingAppId, setPendingAppId] = useState(null);
+  const [approvalTimer, setApprovalTimer] = useState(120);
+  const [approvedInterviewId, setApprovedInterviewId] = useState(null);
+
+  useEffect(() => {
+    let interval;
+    if (pendingAppId && !approvedInterviewId && approvalTimer > 0) {
+      interval = setInterval(() => {
+        setApprovalTimer(prev => prev - 1);
+        
+        // Poll every 5 seconds
+        if (approvalTimer % 5 === 0) {
+          fetch(`https://ai-interview-admin-node.onrender.com/api/applications/${pendingAppId}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.status === 'approved' && data.interviewId) {
+                setApprovedInterviewId(data.interviewId);
+                setSuccessMsg(`Approved! Your Interview ID is: ${data.interviewId}`);
+              }
+            })
+            .catch(err => console.error('Polling error:', err));
+        }
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [pendingAppId, approvedInterviewId, approvalTimer]);
+
   useEffect(() => {
     if (isOpen && activeTab === 'register' && categories.length === 0) {
       fetch('https://ai-interview-admin-node.onrender.com/api/categories')
@@ -74,7 +102,11 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
         throw new Error('Failed to submit application');
       }
       
+      const data = await res.json();
       setSuccessMsg('Application submitted successfully! Please wait for admin approval to receive your Interview ID.');
+      setPendingAppId(data.id);
+      setApprovalTimer(120);
+      setApprovedInterviewId(null);
       
       // Clear form
       setName(''); setLastName(''); setEmail(''); setPhone(''); setCity('');
@@ -207,6 +239,45 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
           )}
 
           {activeTab === 'register' ? (
+            pendingAppId ? (
+              <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
+                {approvedInterviewId ? (
+                  <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
+                    <CheckCircle2 style={{ width: '48px', height: '48px', color: '#1DB96A', margin: '0 auto 1rem auto' }} />
+                    <h3 style={{ color: '#fff', fontSize: '1.2rem', marginBottom: '0.5rem' }}>Application Approved!</h3>
+                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem' }}>Here is your unique Interview ID. Please save it.</p>
+                    <div style={{ background: 'rgba(29, 185, 106, 0.1)', border: '1px solid #1DB96A', padding: '1.5rem', borderRadius: '12px', marginBottom: '2rem' }}>
+                      <span style={{ fontSize: '2rem', fontWeight: 'bold', letterSpacing: '2px', color: '#1DB96A' }}>{approvedInterviewId}</span>
+                    </div>
+                    <button onClick={() => { setActiveTab('login'); setInterviewId(approvedInterviewId); setPendingAppId(null); setSuccessMsg(null); }} className="primary-btn glow-btn" style={{ width: '100%', padding: '1rem', border: 'none', borderRadius: '12px', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
+                      Proceed to Login
+                    </button>
+                  </motion.div>
+                ) : approvalTimer > 0 ? (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <div className="spinner" style={{ borderTopColor: '#00f3ff', borderLeftColor: 'transparent', width: '40px', height: '40px', margin: '0 auto 1rem auto', animation: 'spin 1s linear infinite', border: '3px solid rgba(0, 243, 255, 0.2)', borderRadius: '50%' }}></div>
+                    <h3 style={{ color: '#fff', fontSize: '1.2rem', marginBottom: '0.5rem' }}>Waiting for Admin Approval</h3>
+                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem' }}>The admin is reviewing your application...</p>
+                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#00f3ff', fontFamily: 'monospace' }}>
+                      {Math.floor(approvalTimer / 60)}:{(approvalTimer % 60).toString().padStart(2, '0')}
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <AlertCircle style={{ width: '48px', height: '48px', color: '#f59e0b', margin: '0 auto 1rem auto' }} />
+                    <h3 style={{ color: '#fff', fontSize: '1.2rem', marginBottom: '0.5rem' }}>Timeout</h3>
+                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: '1.6' }}>
+                      The admin is currently unavailable to approve your application immediately.<br/>
+                      Please check your registered email later for your Interview ID.
+                    </p>
+                    <button onClick={() => setPendingAppId(null)} style={{ width: '100%', padding: '1rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
+                      Back to Registration
+                    </button>
+                  </motion.div>
+                )}
+                <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+              </div>
+            ) : (
             <form onSubmit={handleRegister}>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
@@ -283,6 +354,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
                 {isLoading ? 'Submitting...' : 'Register Next'}
               </button>
             </form>
+            )
           ) : (
             <form onSubmit={handleLogin}>
               <div style={{ margin: '2rem 0' }}>
