@@ -240,12 +240,14 @@ export function useProctoring({ onTerminate, isEnabled = true }) {
         const isFaceObscured = skinPixels < 8;
 
         // Increased threshold to 85 to prevent false positives from facial hair or dark clothing
-        const isPhoneInFrame = handHeldDarkDevicePixels > 85 || isFaceObscured;
+        const isPhoneInFrame = handHeldDarkDevicePixels > 85;
         // Only sideways gaze causes termination strikes; looking-down is now a soft warning only
         const isLookingAway = isSidewaysLeft || isSidewaysRight;
 
         let poseLabel = 'CENTERED';
-        if (isPhoneInFrame) {
+        if (isFaceObscured) {
+          poseLabel = 'HUMAN NOT DETECTED';
+        } else if (isPhoneInFrame) {
           poseLabel = 'PHONE / DEVICE DETECTED';
         } else if (isSidewaysLeft) {
           poseLabel = 'LOOKING LEFT';
@@ -262,7 +264,7 @@ export function useProctoring({ onTerminate, isEnabled = true }) {
           y: faceCenterY,
           width: 0.44,
           height: 0.54,
-          isCentered: !isLookingAway && !isPhoneInFrame,
+          isCentered: !isLookingAway && !isPhoneInFrame && !isFaceObscured,
           poseLabel,
           isPhoneDetected: isPhoneInFrame,
           faceCount: 1,
@@ -273,7 +275,9 @@ export function useProctoring({ onTerminate, isEnabled = true }) {
         // DYNAMIC ATTENTION SCORE (100% Facing Forward, Deducts Only When Away)
         // -------------------------------------------------------------
         let currentAttention = 100;
-        if (isPhoneInFrame) {
+        if (isFaceObscured) {
+          currentAttention = 0;
+        } else if (isPhoneInFrame) {
           currentAttention = 25;
         } else if (isSidewaysLeft || isSidewaysRight) {
           currentAttention = 55;
@@ -311,36 +315,44 @@ export function useProctoring({ onTerminate, isEnabled = true }) {
         }
 
         // -------------------------------------------------------------
-        // AUTOMATIC RULE 2: SIDEWAYS GAZE STRIKE (0.6s RESPONSE)
+        // AUTOMATIC RULE 2: SIDEWAYS GAZE STRIKE (INSTANT TERMINATION)
         // -------------------------------------------------------------
-        if (isLookingAway && !isPhoneInFrame) {
+        if (isLookingAway && !isPhoneInFrame && !isFaceObscured) {
           if (!isLookingAwayRef.current) {
             isLookingAwayRef.current = true;
             lookingAwayTimerRef.current = setTimeout(() => {
-              setLookingAwayCount((prev) => {
-                const newGazeCount = prev + 1;
-                addLog(`Vision Alert ${newGazeCount}/3: Candidate ${poseLabel}`, "danger");
-
-                if (newGazeCount >= 3) {
-                  setIsTerminated(true);
-                  const msg = `Integrity Breach: Exceeded 3 gaze deviation strikes (${poseLabel}).`;
-                  setTerminationReason(msg);
-                  if (onTerminate) onTerminate({ reason: msg, lookingAwayCount: newGazeCount });
-                } else {
-                  setActiveWarning({
-                    title: `VISION INTEGRITY ALERT: Strike ${newGazeCount}/3`,
-                    message: `AI Vision detected ${poseLabel}. Please maintain direct eye contact with the camera.`,
-                    type: 'gaze'
-                  });
-                }
-                return newGazeCount;
-              });
+              addLog(`CRITICAL SECURITY BREACH: Candidate ${poseLabel}`, "critical");
+              setIsTerminated(true);
+              const msg = `Integrity Breach: Gaze deviated from screen (${poseLabel}).`;
+              setTerminationReason(msg);
+              if (onTerminateRef.current) onTerminateRef.current({ reason: msg });
             }, 600);
           }
         } else {
           if (isLookingAwayRef.current) {
             isLookingAwayRef.current = false;
             if (lookingAwayTimerRef.current) clearTimeout(lookingAwayTimerRef.current);
+          }
+        }
+
+        // -------------------------------------------------------------
+        // AUTOMATIC RULE 3: HUMAN NOT DETECTED (INSTANT TERMINATION)
+        // -------------------------------------------------------------
+        if (isFaceObscured) {
+          if (!isNoFaceRef.current) {
+            isNoFaceRef.current = true;
+            noFaceTimerRef.current = setTimeout(() => {
+              addLog("CRITICAL SECURITY BREACH: Human face not detected in frame!", "critical");
+              setIsTerminated(true);
+              const msg = `Integrity Breach: Human presence not detected.`;
+              setTerminationReason(msg);
+              if (onTerminateRef.current) onTerminateRef.current({ reason: msg });
+            }, 800);
+          }
+        } else {
+          if (isNoFaceRef.current) {
+            isNoFaceRef.current = false;
+            if (noFaceTimerRef.current) clearTimeout(noFaceTimerRef.current);
           }
         }
 
