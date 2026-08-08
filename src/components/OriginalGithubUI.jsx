@@ -11,7 +11,7 @@ import '../components/form.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/interview';
 
-export default function OriginalGithubUI({ user, userRole, onLogout, onSwitchRole }) {
+export default function OriginalGithubUI({ user, userRole, activeSubject, onLogout, onSwitchRole }) {
   const [sessionId, setSessionId] = useState('');
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
@@ -28,7 +28,7 @@ export default function OriginalGithubUI({ user, userRole, onLogout, onSwitchRol
 
   // Initialize Proctoring Engine Hook
   const proctorState = useProctoring({
-    isEnabled: true,
+    isEnabled: !!sessionId && !isDone,
     onTerminate: async ({ reason }) => {
       setIsDone(true);
       setIsSpeaking(false);
@@ -136,7 +136,7 @@ export default function OriginalGithubUI({ user, userRole, onLogout, onSwitchRol
         body: JSON.stringify({
           sessionId: newId,
           candidate: {
-            member: { name: user?.displayName || 'Sarah Johnson', jobRole: 'Senior Data Engineer' },
+            member: { name: user?.displayName || 'Candidate', jobRole: activeSubject || 'General Assessment' },
             missions: [
               { day: 1, passed: true },
               { day: 3, passed: true },

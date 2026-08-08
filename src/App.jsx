@@ -6,12 +6,14 @@ import AdminDashboard from './components/AdminDashboard';
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [userRole, setUserRole] = useState('interviewer'); // 'interviewer' | 'admin'
+  const [activeSubject, setActiveSubject] = useState('General');
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(true); // Open login modal on launch
 
-  // Handle successful Firebase Google Auth or Instant Demo Login
-  const handleAuthSuccess = ({ user, role }) => {
+  // Handle successful ID Login
+  const handleAuthSuccess = ({ user, role, subject }) => {
     setCurrentUser(user);
     setUserRole(role);
+    if (subject) setActiveSubject(subject);
     setIsLoginModalOpen(false);
   };
 
@@ -44,6 +46,7 @@ export default function App() {
         <OriginalGithubUI
           user={currentUser}
           userRole={userRole}
+          activeSubject={activeSubject}
           onLogout={handleLogout}
           onSwitchRole={() => setUserRole('admin')}
         />
