@@ -27,7 +27,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
 
   useEffect(() => {
     if (isOpen && activeTab === 'register' && categories.length === 0) {
-      fetch('http://localhost:4000/api/categories')
+      fetch('https://ai-interview-admin-node.onrender.com/api/categories')
         .then(res => res.json())
         .then(data => {
           setCategories(data);
@@ -65,7 +65,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
         formData.append('resumeFile', resumeFile);
       }
 
-      const res = await fetch('http://localhost:4000/api/applications', {
+      const res = await fetch('https://ai-interview-admin-node.onrender.com/api/applications', {
         method: 'POST',
         body: formData // Let browser set Content-Type with boundary automatically
       });
@@ -99,7 +99,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
     }
 
     try {
-      const res = await fetch(`http://localhost:4000/api/interviews/${interviewId.toUpperCase()}`);
+      const res = await fetch(`https://ai-interview-admin-node.onrender.com/api/interviews/${interviewId.toUpperCase()}`);
       const data = await res.json();
       
       if (!res.ok) {
@@ -296,7 +296,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
           )}
 
           <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-            <a href="http://localhost:4000/login.html" target="_blank" rel="noreferrer" style={{ color: '#94a3b8', fontSize: '0.8rem', textDecoration: 'none' }}>
+            <a href="https://ai-interview-admin-node.onrender.com/login.html" target="_blank" rel="noreferrer" style={{ color: '#94a3b8', fontSize: '0.8rem', textDecoration: 'none' }}>
               <Shield style={{ width: '12px', height: '12px', display: 'inline', marginRight: '4px' }} /> Admin Access
             </a>
           </div>

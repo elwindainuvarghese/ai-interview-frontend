@@ -9,7 +9,7 @@ import '../components/chat.css';
 import '../components/calendar.css';
 import '../components/form.css';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/interview';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://ai-interview-fastapi.onrender.com/api/interview';
 
 export default function OriginalGithubUI({ user, userRole, activeSubject, onLogout, onSwitchRole }) {
   const [sessionId, setSessionId] = useState('');

@@ -72,7 +72,7 @@ export function useProctoring({ onTerminate, isEnabled = true }) {
 
         // Connect Admin Socket (once, on camera setup)
         if (!socketRef.current) {
-          socketRef.current = io('http://127.0.0.1:4000');
+          socketRef.current = io('https://ai-interview-admin-node.onrender.com');
           socketRef.current.on('kill_interview', (data) => {
              setIsTerminated(true);
              setTerminationReason(data.reason || "Terminated by Proctor.");
