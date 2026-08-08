@@ -65,7 +65,7 @@ body {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 1fr 1.5fr 1fr;
+  grid-template-columns: 1.2fr 1.8fr;
   gap: 2rem;
   flex: 1;
   align-items: center;

@@ -416,32 +416,9 @@ export default function OriginalGithubUI({ user, userRole, activeSubject, onLogo
             {proctorState.isTerminated ? 'Assessment Terminated' : isSpeaking ? 'Interview in Progress...' : 'Start Interview'}
           </button>
         </section>
-
-        {/* Right Panel: Calendar & Scheduling */}
-        <aside className="glass-panel calendar-panel" id="calendar-container">
-          <h2>Upcoming Sessions</h2>
-          <div id="calendar-widget">
-            {calendarEvents.map((evt, idx) => (
-              <div key={idx} className={`calendar-item ${evt.active ? 'active' : ''}`}>
-                <div>
-                  <div className="cal-time">{evt.time}</div>
-                  <div className="cal-title">{evt.title}</div>
-                </div>
-                <div className={`cal-status ${evt.active ? 'glowing' : ''}`}></div>
-              </div>
-            ))}
-          </div>
-        </aside>
       </main>
 
-      {/* Bottom Panel: Form */}
-      <footer className="form-container">
-        <form id="contact-form" className="glass-panel" onSubmit={(e) => { e.preventDefault(); alert("Calendar synchronization requested!"); }}>
-          <input type="text" className="pill-input" placeholder="Your Name" defaultValue={user?.displayName || ''} />
-          <input type="email" className="pill-input" placeholder="Your Email" defaultValue={user?.email || ''} />
-          <button type="submit" className="pill-submit primary-btn glow-btn">Sync Calendar</button>
-        </form>
-      </footer>
+
     </div>
   );
 }
