@@ -230,17 +230,17 @@ export function useProctoring({ onTerminate, isEnabled = true }) {
         }
 
         // ACCURATE GAZE THRESHOLDS FOR CANDIDATE FACING CAMERA
-        // Tightened sideways thresholds from 0.35/0.65 to 0.42/0.58 so even slight head turns are caught
-        const isSidewaysLeft = faceCenterX < 0.42;
-        const isSidewaysRight = faceCenterX > 0.58;
+        // Relaxed sideways thresholds to 0.30/0.70 so candidates sitting slightly off-center aren't penalized
+        const isSidewaysLeft = faceCenterX < 0.30;
+        const isSidewaysRight = faceCenterX > 0.70;
         // Only flag looking-down if centroid is extremely low in frame (near 80%)
         const isLookingDown = faceCenterY > 0.80;
         
         // If the skin pixel count is very low, the face is likely blocked by a phone or looking completely away
-        const isFaceObscured = skinPixels < 15;
+        const isFaceObscured = skinPixels < 8;
 
-        // Lowered threshold to 20 to catch more phones
-        const isPhoneInFrame = handHeldDarkDevicePixels > 20 || isFaceObscured;
+        // Increased threshold to 85 to prevent false positives from facial hair or dark clothing
+        const isPhoneInFrame = handHeldDarkDevicePixels > 85 || isFaceObscured;
         // Only sideways gaze causes termination strikes; looking-down is now a soft warning only
         const isLookingAway = isSidewaysLeft || isSidewaysRight;
 
