@@ -130,11 +130,23 @@ export default function OriginalGithubUI({ user, userRole, activeSubject, onLogo
     setMessages([]);
 
     try {
+      let adminQuestions = [];
+      try {
+        const qRes = await fetch('https://ai-interview-admin-node.onrender.com/api/questions');
+        if (qRes.ok) {
+          const allQuestions = await qRes.json();
+          adminQuestions = allQuestions.filter(q => !activeSubject || q.category === activeSubject);
+        }
+      } catch (qErr) {
+        console.warn("Failed to fetch admin questions", qErr);
+      }
+
       const res = await fetch(API_BASE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId: newId,
+          adminQuestions: adminQuestions,
           candidate: {
             member: { name: user?.displayName || 'Candidate', jobRole: activeSubject || 'General Assessment' },
             missions: [
@@ -195,6 +207,24 @@ export default function OriginalGithubUI({ user, userRole, activeSubject, onLogo
         setIsSpeaking(false);
         if (data.feedback) {
           setFeedback(data.feedback);
+          
+          if (interviewId) {
+            try {
+              const fullTranscript = [...messages, { type: 'user', text: userText }, { type: 'ai', text: data.reply }];
+              await fetch(`https://ai-interview-admin-node.onrender.com/api/applications/${interviewId}/results`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  overallScore: data.feedback.overallScore || 0,
+                  passed: data.feedback.passed || false,
+                  feedback: data.feedback,
+                  transcript: fullTranscript
+                })
+              });
+            } catch (err) {
+              console.error("Failed to post results to admin server", err);
+            }
+          }
         }
       }
     } catch (err) {
