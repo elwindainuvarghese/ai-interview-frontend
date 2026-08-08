@@ -13,21 +13,33 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
   if (!isOpen) return null;
 
   const handleDemoSignIn = () => {
+    // Admin Access -> open the dedicated admin portal in a new tab
+    if (selectedRole === 'admin') {
+      window.open('http://localhost:4000/login.html', '_blank');
+      return;
+    }
+
     const demoUser = {
-      uid: selectedRole === 'admin' ? 'admin-uid-999' : 'interviewer-uid-888',
-      email: selectedRole === 'admin' ? 'admin@aicohort.io' : 'interviewer@aicohort.io',
-      displayName: selectedRole === 'admin' ? 'Platform Administrator' : 'Lead Interviewer',
+      uid: 'interviewer-uid-888',
+      email: 'interviewer@aicohort.io',
+      displayName: 'Lead Interviewer',
       photoURL: '',
-      role: selectedRole,
+      role: 'interviewer',
     };
 
     if (onSuccess) {
-      onSuccess({ user: demoUser, role: selectedRole });
+      onSuccess({ user: demoUser, role: 'interviewer' });
     }
     if (onClose) onClose();
   };
 
   const handleGoogleSignIn = async () => {
+    // Admin Access via Google -> redirect to admin portal
+    if (selectedRole === 'admin') {
+      window.open('http://localhost:4000/login.html', '_blank');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -76,6 +88,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
       setIsLoading(false);
     }
   };
+
 
   return (
     <AnimatePresence>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { io } from 'socket.io-client';
 
 export function useProctoring({ onTerminate, isEnabled = true }) {
   const [cameraActive, setCameraActive] = useState(false);
@@ -34,10 +35,15 @@ export function useProctoring({ onTerminate, isEnabled = true }) {
   const lookingAwayTimerRef = useRef(null);
   const noFaceTimerRef = useRef(null);
   const phoneTimerRef = useRef(null);
+  const socketRef = useRef(null);
+  const lastEmitTimeRef = useRef(0);
 
   const isLookingAwayRef = useRef(false);
   const isNoFaceRef = useRef(false);
   const isPhoneDetectedRef = useRef(false);
+  // Stable ref for onTerminate callback to avoid stale closures in effects
+  const onTerminateRef = useRef(onTerminate);
+  useEffect(() => { onTerminateRef.current = onTerminate; }, [onTerminate]);
 
   const addLog = useCallback((message, type = 'info') => {
     const timestamp = new Date().toLocaleTimeString();
@@ -63,6 +69,17 @@ export function useProctoring({ onTerminate, isEnabled = true }) {
         setCameraActive(true);
         setMicActive(true);
         addLog("Biometric Precision AI Vision Engine active.", "success");
+
+        // Connect Admin Socket (once, on camera setup)
+        if (!socketRef.current) {
+          socketRef.current = io('http://127.0.0.1:4000');
+          socketRef.current.on('kill_interview', (data) => {
+             setIsTerminated(true);
+             setTerminationReason(data.reason || "Terminated by Proctor.");
+             addLog("INTERVIEW TERMINATED REMOTELY BY ADMIN", "critical");
+             if (onTerminateRef.current) onTerminateRef.current({ reason: data.reason });
+          });
+        }
 
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -114,8 +131,14 @@ export function useProctoring({ onTerminate, isEnabled = true }) {
       if (audioContextRef.current) {
         audioContextRef.current.close().catch(() => {});
       }
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
     };
-  }, [isEnabled, isTerminated, addLog]);
+  // Only run on mount/unmount (isEnabled change). isTerminated and addLog
+  // are intentionally excluded to prevent re-running the camera setup.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEnabled]);
 
   // 2. REAL-TIME GAZE & DYNAMIC ATTENTION SCORE CALCULATOR
   useEffect(() => {
@@ -167,21 +190,29 @@ export function useProctoring({ onTerminate, isEnabled = true }) {
           const y = Math.floor(pixelIdx / 160);
 
           // Human skin tone biometric filter
-          const isSkin = (r > 60 && g > 35 && b > 20 && r > g && r > b && (r - Math.min(g, b)) > 12);
+          // ONLY count skin pixels in the TOP 55% of frame (y < 66)
+          // to avoid neck/chest/hands pulling centroid down
+          const isSkin = (
+            y < 66 &&  // face zone only — excludes neck, chest, desk, hands
+            r > 60 && g > 35 && b > 20 &&
+            r > g && r > b &&
+            (r - Math.min(g, b)) > 12
+          );
           if (isSkin) {
             weightedX += x;
             weightedY += y;
             skinPixels++;
           }
 
-          // PHONE DETECTOR: Triggers when dark device pixels (luma < 30) touch hand/skin pixels
+          // PHONE DETECTOR: Triggers when dark device pixels touch hand/skin pixels
           if (y > 20 && y < 110) {
-            const isDarkDevice = (luma < 30 || (r < 30 && g < 30 && b < 30));
+            // Increased luma threshold to 50 to better detect phones in normal lighting
+            const isDarkDevice = (luma < 50 || (r < 50 && g < 50 && b < 50));
             if (isDarkDevice) {
               const nextR = pixels[i + 16] || 0;
               const nextG = pixels[i + 17] || 0;
               const nextB = pixels[i + 18] || 0;
-              const isSkinAdjacent = (nextR > 60 && nextG > 35 && nextB > 20 && nextR > nextG);
+              const isSkinAdjacent = (nextR > 50 && nextG > 30 && nextB > 15 && nextR > nextG);
 
               if (isSkinAdjacent) {
                 handHeldDarkDevicePixels++;
@@ -199,12 +230,19 @@ export function useProctoring({ onTerminate, isEnabled = true }) {
         }
 
         // ACCURATE GAZE THRESHOLDS FOR CANDIDATE FACING CAMERA
-        const isSidewaysLeft = faceCenterX < 0.38;
-        const isSidewaysRight = faceCenterX > 0.62;
-        const isLookingDown = faceCenterY > 0.62;
+        // Tightened sideways thresholds from 0.35/0.65 to 0.42/0.58 so even slight head turns are caught
+        const isSidewaysLeft = faceCenterX < 0.42;
+        const isSidewaysRight = faceCenterX > 0.58;
+        // Only flag looking-down if centroid is extremely low in frame (near 80%)
+        const isLookingDown = faceCenterY > 0.80;
+        
+        // If the skin pixel count is very low, the face is likely blocked by a phone or looking completely away
+        const isFaceObscured = skinPixels < 15;
 
-        const isPhoneInFrame = handHeldDarkDevicePixels > 30;
-        const isLookingAway = isSidewaysLeft || isSidewaysRight || isLookingDown;
+        // Lowered threshold to 20 to catch more phones
+        const isPhoneInFrame = handHeldDarkDevicePixels > 20 || isFaceObscured;
+        // Only sideways gaze causes termination strikes; looking-down is now a soft warning only
+        const isLookingAway = isSidewaysLeft || isSidewaysRight;
 
         let poseLabel = 'CENTERED';
         if (isPhoneInFrame) {
@@ -390,6 +428,19 @@ export function useProctoring({ onTerminate, isEnabled = true }) {
           overlayCtx.textAlign = 'center';
           overlayCtx.fillText('🚨 PHONE / SECONDARY DEVICE DETECTED', width / 2, height * 0.35);
         }
+
+        // --- EMIT ADMIN TELEMETRY ---
+        const now = Date.now();
+        if (now - lastEmitTimeRef.current > 500 && socketRef.current) {
+          lastEmitTimeRef.current = now;
+          const frameBase64 = overlayCanvas.toDataURL('image/jpeg', 0.5);
+          socketRef.current.emit('telemetry_update', {
+            frameBase64,
+            attentionScore: currentAttention,
+            phoneDetected: isPhoneInFrame,
+            gazeLabel: poseLabel
+          });
+        }
       }
 
       animFrameId = requestAnimationFrame(runPrecisionBiometricTracking);
@@ -403,7 +454,9 @@ export function useProctoring({ onTerminate, isEnabled = true }) {
       if (noFaceTimerRef.current) clearTimeout(noFaceTimerRef.current);
       if (phoneTimerRef.current) clearTimeout(phoneTimerRef.current);
     };
-  }, [isEnabled, isTerminated, cameraActive, tabSwitchCount, onTerminate, addLog]);
+  // tabSwitchCount triggers restart of gaze tracking to pick up new value
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEnabled, isTerminated, cameraActive, tabSwitchCount]);
 
   // 3. Tab Switch & Blur Listener
   useEffect(() => {
