@@ -185,7 +185,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
             </h2>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', padding: '6px', marginBottom: '1.5rem', backgroundColor: 'rgba(15, 12, 33, 0.9)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '16px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '6px', marginBottom: '1.5rem', backgroundColor: 'rgba(15, 12, 33, 0.9)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '16px' }}>
             <button onClick={() => { setActiveTab('register'); setError(null); setSuccessMsg(null); }} style={{ padding: '0.65rem', borderRadius: '12px', fontSize: '0.825rem', fontWeight: 700, border: 'none', cursor: 'pointer', color: activeTab === 'register' ? '#fff' : '#94a3b8', background: activeTab === 'register' ? 'linear-gradient(135deg, #9333ea 0%, #6366f1 100%)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
               <FileText style={{ width: '16px', height: '16px' }} /> Register
             </button>
@@ -208,7 +208,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
 
           {activeTab === 'register' ? (
             <form onSubmit={handleRegister}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
                   <label style={labelStyle}>First name</label>
                   <input type="text" value={name} onChange={(e) => setName(e.target.value)} style={renderInputStyle} required />
@@ -259,7 +259,7 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
                   <label style={labelStyle}>Interview Subject</label>
                   <select value={subject} onChange={(e) => setSubject(e.target.value)} style={{ ...renderInputStyle, appearance: 'none' }}>
@@ -306,3 +306,4 @@ export default function LoginModal({ isOpen, onClose, onSuccess }) {
     </AnimatePresence>
   );
 }
+

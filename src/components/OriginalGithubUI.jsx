@@ -225,10 +225,7 @@ export default function OriginalGithubUI({ user, userRole, activeSubject, onLogo
       <ProctorMonitor proctorState={proctorState} onRestart={handleRestartAll} />
 
       {/* User Auth Banner Bar */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+      <div className="responsive-flex-wrap" style={{
         padding: '0.6rem 1.25rem',
         marginBottom: '1.5rem',
         backgroundColor: 'rgba(255,255,255,0.03)',
@@ -417,3 +414,4 @@ export default function OriginalGithubUI({ user, userRole, activeSubject, onLogo
     </div>
   );
 }
+

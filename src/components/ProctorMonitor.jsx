@@ -37,7 +37,7 @@ export default function ProctorMonitor({ proctorState, onRestart }) {
           top: '1.25rem',
           right: '1.25rem',
           zIndex: 9990,
-          width: '320px',
+          width: 'min(320px, calc(100vw - 2.5rem))',
           backgroundColor: 'rgba(9, 7, 24, 0.95)',
           backdropFilter: 'blur(24px)',
           WebkitBackdropFilter: 'blur(24px)',
@@ -341,3 +341,4 @@ export default function ProctorMonitor({ proctorState, onRestart }) {
     </>
   );
 }
+
